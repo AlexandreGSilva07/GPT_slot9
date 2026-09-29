@@ -140,27 +140,58 @@ export default function Explorer({ initialCatalog, sourceMarkdown }: Props) {
     }
 
     try {
-      const response = await fetch("/api/proxy", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          url: target,
-          method: selected.method.toUpperCase().includes("POST") ? "POST" : "GET",
-          body: parsedBody,
-        }),
-      });
+      const method = selected.method.toUpperCase().includes("POST") ? "POST" : "GET";
+      const init: RequestInit = {
+        method,
+        headers: { "accept": "application/json,text/plain,text/html,*/*" },
+      };
 
-      const payload = await response.json();
+      if (method === "POST") {
+        init.headers = {
+          ...init.headers,
+          "content-type": "application/json",
+        };
+        init.body = JSON.stringify(parsedBody ?? {});
+      }
+
+      const started = performance.now();
+      const response = await fetch(target, init);
+      const contentType = response.headers.get("content-type") || "";
+      let data: unknown;
+
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else if (contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
+        data = {
+          binary: true,
+          contentType,
+          contentLength: response.headers.get("content-length"),
+          note: "Resposta binária. Use Abrir original para visualizar/baixar.",
+        };
+      } else {
+        data = await response.text();
+      }
+
       setRun({
         loading: false,
-        result: payload,
-        error: response.ok ? null : payload?.error || "Falha na consulta.",
+        result: {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          contentType,
+          durationMs: Math.round(performance.now() - started),
+          url: response.url,
+          data,
+        },
+        error: response.ok ? null : `HTTP ${response.status} ${response.statusText}`,
       });
     } catch (error) {
       setRun({
         loading: false,
         result: null,
-        error: error instanceof Error ? error.message : "Falha de rede.",
+        error: error instanceof Error
+          ? `${error.message}. Se for CORS, o GitHub Pages não consegue contornar a política do servidor de origem; use “Abrir original”.`
+          : "Falha de rede/CORS.",
       });
     }
   }
@@ -190,7 +221,7 @@ export default function Explorer({ initialCatalog, sourceMarkdown }: Props) {
           >
             MD original
           </button>
-          <a className="tab" href="/api/catalog" target="_blank" rel="noreferrer">
+          <a className="tab" href="api/catalog/" target="_blank" rel="noreferrer">
             JSON
           </a>
         </nav>
@@ -222,7 +253,7 @@ export default function Explorer({ initialCatalog, sourceMarkdown }: Props) {
               <span className="eyebrow">FONTE DE VERDADE</span>
               <h2>apis_publicas_prefeitura_cuiaba_mt.md</h2>
             </div>
-            <a href="/api/source" target="_blank" rel="noreferrer" className="secondary-button">
+            <a href="api/source/" target="_blank" rel="noreferrer" className="secondary-button">
               Abrir arquivo
             </a>
           </div>
@@ -328,7 +359,7 @@ export default function Explorer({ initialCatalog, sourceMarkdown }: Props) {
                     <div><dt>Sistema</dt><dd>{selected.system}</dd></div>
                     <div><dt>Seção</dt><dd>{selected.section}</dd></div>
                     <div><dt>Origem</dt><dd>{selected.origin === "table" ? "Tabela do MD" : selected.origin === "code" ? "Bloco de código do MD" : "Referência do MD"}</dd></div>
-                    <div><dt>Execução</dt><dd>{selected.canExecute ? "Permitida pelo proxy" : "Registro/link somente"}</dd></div>
+                    <div><dt>Execução</dt><dd>{selected.canExecute ? "Tentativa direta pelo navegador" : "Registro/link somente"}</dd></div>
                   </dl>
 
                   {selected.url ? (
