@@ -1,39 +1,51 @@
-# Cuiabá API Atlas
+# Cuiabá Dados
 
-Explorador unificado das APIs, endpoints, páginas de consulta, formulários e webservices já mapeados no levantamento da Prefeitura de Cuiabá.
+Hub municipal experimental que transforma o inventário de APIs e endpoints públicos de Cuiabá em um produto utilizável.
 
-## Fonte de verdade
+## O que aparece para o usuário
 
-O arquivo `data/apis_publicas_prefeitura_cuiaba_mt.md` é o inventário original. O catálogo exibido na aplicação é extraído automaticamente desse arquivo.
+- visão geral da cidade;
+- finanças públicas;
+- compras, licitações e contratos;
+- pessoas e serviço público;
+- cidade, patrimônio e território;
+- saúde;
+- educação;
+- Diário Oficial e legislação;
+- serviços e processos;
+- busca unificada sobre os dados coletados.
 
-## O que o sistema faz
+## Como as APIs são usadas
 
-- cataloga todas as rotas e URLs documentadas no MD;
-- resolve automaticamente as bases do Portal da Transparência, SmartGIS e Gazeta Municipal;
-- mantém páginas WebForms, formulários e webservices transacionais no mesmo inventário;
-- permite busca e filtros por sistema, tipo e executabilidade;
-- executa consultas de leitura por um proxy server-side;
-- permite POST somente em rotas mapeadas como leitura/exportação sem efeito transacional;
-- disponibiliza o inventário estruturado em `/api/catalog`;
-- disponibiliza o MD original em `/api/source`.
+O arquivo `data/apis_publicas_prefeitura_cuiaba_mt.md` continua sendo o inventário técnico de referência.
 
-## Segurança de execução
+Antes de cada publicação, `scripts/collect-data.mjs`:
 
-O sistema não dispara automaticamente cadastros, denúncias, envio de e-mail, emissão fiscal, lances ou outras operações transacionais. Essas rotas continuam registradas e acessíveis como referência/link oficial.
+1. lê o inventário;
+2. identifica as rotas públicas das famílias Portal da Transparência, SmartGIS e Gazeta Municipal;
+3. consulta automaticamente todas as rotas GET que podem ser chamadas sem parâmetros;
+4. mantém registradas as rotas parametrizadas e ações não seguras para chamada automática;
+5. consolida as respostas em `public/data/municipal-snapshot.json`;
+6. preserva o último retorno válido quando uma fonte falha temporariamente ou responde com rate limit.
+
+O GitHub Pages publica o dashboard já com esse snapshot.
+
+## Atualização
+
+O workflow `.github/workflows/pages.yml` coleta os dados antes do build e também possui execução agendada.
 
 ## Desenvolvimento
 
 ```bash
 npm install
+npm run collect
 npm run dev
 ```
 
-Build:
+Build estático:
 
 ```bash
 npm run build
 ```
 
-## Origem
-
-Projeto experimental/não oficial. Os dados e serviços pertencem às respectivas fontes públicas municipais/terceirizadas documentadas no inventário.
+Projeto não oficial. Os dados pertencem às respectivas fontes públicas municipais e sistemas documentados no inventário.

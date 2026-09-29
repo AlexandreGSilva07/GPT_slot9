@@ -1,12 +1,13 @@
 {
-  "name": "cuiaba-api-atlas",
+  "name": "cuiaba-data-hub",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "collect": "node scripts/collect-data.mjs"
   },
   "dependencies": {
     "next": "16.3.6",
